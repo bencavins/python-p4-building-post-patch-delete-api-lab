@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from flask import Flask, make_response, jsonify
+from flask import Flask, make_response, jsonify, request
 from flask_migrate import Migrate
 
 from models import db, Bakery, BakedGood
@@ -41,6 +41,37 @@ def bakery_by_id(id):
         200
     )
     return response
+
+@app.route('/baked_goods', methods=['POST'])
+def baked_goods():
+    good = BakedGood(
+        name=request.form.get('name'),
+        price=request.form.get('price'),
+        bakery_id=request.form.get('bakery_id')
+    )
+    db.session.add(good)
+    db.session.commit()
+    return jsonify(good.to_dict()), 201
+
+@app.route('/baked_goods/<int:id>', methods=['GET', 'PATCH', 'DELETE'])
+def baked_good_by_id(id):
+    good = BakedGood.query.filter(BakedGood.id == id).first()
+    
+    if request.method == 'GET':
+        return jsonify(good.to_dict()), 200
+
+    elif request.method == 'PATCH':
+        print(type(request.form))
+        for field in request.form:
+            setattr(good, field, request.form.get(field))
+        db.session.add(good)
+        db.session.commit()
+        return jsonify(good.to_dict()), 200
+    
+    elif request.method == 'DELETE':
+        db.session.delete(good)
+        db.session.commit()
+        return jsonify({'message': 'delete success'})
 
 @app.route('/baked_goods/by_price')
 def baked_goods_by_price():
